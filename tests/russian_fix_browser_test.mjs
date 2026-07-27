@@ -12,6 +12,11 @@ const dom = new JSDOM(html, {
   },
 });
 
+if (dom.window.document.readyState === 'loading') {
+  await new Promise((resolve) => dom.window.document.addEventListener('DOMContentLoaded', resolve, { once: true }));
+}
+await new Promise((resolve) => setTimeout(resolve, 0));
+
 const api = dom.window.__edemoTest;
 assert.ok(api, 'test API is available');
 const tasks = api.getTasks();
