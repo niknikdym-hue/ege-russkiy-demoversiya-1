@@ -55,11 +55,25 @@ jobs:
         run: npm install --no-save jsdom@26
 
       - name: Run browser smoke tests
-        run: node tests/russian_fix_browser_test.mjs
+        id: browser
+        continue-on-error: true
+        run: node tests/russian_fix_browser_test.mjs > russian-browser-error.log 2>&1
+
+      - name: Save browser diagnostic on failure
+        if: steps.browser.outcome == 'failure'
+        run: |
+          cat russian-browser-error.log
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add russian-browser-error.log
+          git commit -m "Record Russian browser test diagnostic"
+          git push origin HEAD:${{ github.head_ref || github.ref_name }}
+          exit 1
 
       - name: Validate corrected package
+        if: steps.browser.outcome == 'success'
         run: |
-          rm -rf node_modules package-lock.json package.json scripts/__pycache__
+          rm -rf node_modules package-lock.json package.json scripts/__pycache__ russian-browser-error.log
           git diff --check
           python -m zipfile -t ege-russkiy-demoversiya-v2-1-fixed.zip
           grep -q 'source/ege-2026-russkiy-demoversiya.pdf' ege-russkiy-demoversiya-MANIFEST.txt
@@ -69,6 +83,7 @@ jobs:
           test -f ege-russkiy-demoversiya-PREVIEW.html
 
       - name: Commit corrected package
+        if: steps.browser.outcome == 'success'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -81,6 +96,7 @@ jobs:
           fi
 
       - name: Upload corrected ZIP
+        if: steps.browser.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: ege-russkiy-demoversiya-v2-1-fixed
