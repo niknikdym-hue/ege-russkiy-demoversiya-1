@@ -2,15 +2,15 @@ node:internal/modules/run_main:123
     triggerUncaughtException(
     ^
 
-AssertionError [ERR_ASSERTION]: space rejected 1
+AssertionError [ERR_ASSERTION]: all 41 official short-answer examples checked
 
-1 !== 0
+35 !== 41
 
-    at file:///home/runner/work/ege-russkiy-demoversiya-1/ege-russkiy-demoversiya-1/tests/russian_fix_browser_test.mjs:35:12 {
+    at file:///home/runner/work/ege-russkiy-demoversiya-1/ege-russkiy-demoversiya-1/tests/russian_fix_browser_test.mjs:42:8 {
   generatedMessage: false,
   code: 'ERR_ASSERTION',
-  actual: 1,
-  expected: 0,
+  actual: 35,
+  expected: 41,
   operator: 'strictEqual',
   diff: 'simple'
 }
