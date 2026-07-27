@@ -178,6 +178,10 @@
     #ege-demo-2026 .edemo-plain-list{list-style:none;padding:0}
     #ege-demo-2026 .edemo-quotes{padding:12px;border-radius:12px;background:#f6f8fb}
     #ege-demo-2026 .edemo-mini{font-size:13px;opacity:.75}
+    #ege-demo-2026 .edemo-zero-options{display:grid;gap:10px;margin-top:14px}
+    #ege-demo-2026 .edemo-zero-option{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border:1px solid #dfe4eb;border-radius:12px;background:#fff}
+    #ege-demo-2026 .edemo-zero-option input{width:auto;margin-top:4px;flex:0 0 auto}
+    #ege-demo-2026 .edemo-zero-option span{line-height:1.5}
     #ege-demo-2026 .edemo-hidden{display:none!important}
     @media(max-width:900px){
       #ege-demo-2026 .edemo-toolbar{grid-template-columns:1fr auto}
@@ -280,13 +284,18 @@
               <div class="edemo-score-grid">
                 <div class="edemo-score-card"><div class="edemo-score-value"><span id="edemo-short-score">0</span>/28</div><p>Задания 1–26</p></div>
                 <div class="edemo-score-card"><div class="edemo-score-value"><span id="edemo-essay-score">—</span>/22</div><p>Сочинение по самооценке</p><p class="edemo-mini" id="edemo-essay-status">Не оценено</p></div>
-                <div class="edemo-score-card"><div class="edemo-score-value"><span id="edemo-total-score">—</span>/50</div><p>Итог после проверки сочинения</p><p class="edemo-mini">Самооценка не заменяет проверку эксперта</p></div>
+                <div class="edemo-score-card"><div class="edemo-score-value"><span id="edemo-total-score">—</span>/50</div><p>Ориентировочный итог по самооценке</p><p class="edemo-mini">Официальный балл за сочинение выставляет эксперт</p></div>
               </div>
 
               <section class="ep-panel ep-section">
                 <h3 class="ep-section-title">Самооценка сочинения по К1–К10</h3>
-                <p>Эксамио не заменяет проверку эксперта. Для каждого критерия раскрыты официальные условия выставления баллов. Итог появляется после заполнения всех десяти критериев.</p>
-                <p><strong>Слов в сочинении:</strong> <span class="edemo-word-count" id="edemo-result-word-count">0</span></p>
+                <p>Эксамио не заменяет проверку эксперта. Сначала проверьте общие основания, при которых задание 27 оценивается 0 баллов, затем заполните К1–К10.</p>
+                <p><strong>Технический счётчик — ориентир:</strong> <span class="edemo-word-count" id="edemo-result-word-count">0</span>. Он не используется для автоматического выставления баллов.</p>
+                <section class="ep-panel ep-section">
+                  <h4 class="ep-section-title">Общие основания для 0 баллов</h4>
+                  <p>Отметьте основание только после проверки работы по правилам ФИПИ. При частичном переписывании или пересказе исходного текста в объём входят только слова, принадлежащие автору сочинения.</p>
+                  <div id="edemo-zero-grounds"></div>
+                </section>
                 <div class="edemo-criteria" id="edemo-criteria"></div>
               </section>
 

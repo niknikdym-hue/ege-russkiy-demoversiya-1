@@ -3,7 +3,7 @@
   "use strict";
 
   var ROOT_ID = "ege-demo-2026";
-  var STORAGE_KEY = "eksamio_ege_russian_demo_2026_v2";
+  var STORAGE_KEY = "eksamio_ege_russian_demo_2026_v2_1";
   var DURATION_MS = 210 * 60 * 1000;
 
   function byId(id){ return document.getElementById(id); }
@@ -24,7 +24,7 @@
   }
   function freshState(){
     return {
-      version:2,
+      version:2.1,
       status:"idle",
       current:1,
       answers:{},
@@ -35,7 +35,8 @@
       completedAt:null,
       shortScore:0,
       essayScores:{},
-      essayScore:null
+      essayScore:null,
+      essayZeroReasons:{}
     };
   }
   function loadState(){
@@ -49,11 +50,19 @@
   function saveState(){
     try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
   }
-  function normalizeWord(value){
-    return String(value || "").trim().toLowerCase().replace(/ё/g,"е").replace(/[«»"'.,;:!?()[\]{}—–\-]/g,"").replace(/\s+/g,"");
+  function compactExpected(value){
+    return String(value || "").trim().toLowerCase().replace(/ё/g,"е").replace(/\s+/g,"");
   }
-  function digitsOnly(value){ return String(value || "").replace(/\D/g,""); }
-  function sortedDigits(value){ return digitsOnly(value).split("").sort().join(""); }
+  function strictLetterAnswer(value){
+    var raw=String(value || "").toLowerCase().replace(/ё/g,"е");
+    if(!raw || !/^[А-ЯЁа-яёA-Za-z]+$/.test(raw)) return null;
+    return raw;
+  }
+  function strictDigitAnswer(value){
+    var raw=String(value || "");
+    return /^\d+$/.test(raw) ? raw : null;
+  }
+  function sortedDigits(value){ return String(value || "").split("").sort().join(""); }
   function wordCount(value){
     var text = String(value || "").replace(/\u00A0/g," ");
     text = text.replace(/(?:[А-ЯЁA-Z]\.\s*){1,2}[А-ЯЁA-Z][а-яёa-z-]+/g, " ИМЯ ");
@@ -76,21 +85,23 @@
   }
   function scoreTask(task, value){
     if(task.kind === "essay") return 0;
-    var expected = task.answer;
+    var expected = String(task.answer || "");
     if(task.kind === "word" || task.kind === "word_compact"){
-      var got = normalizeWord(value);
-      var accepted = [expected].concat(task.altAnswers || []).map(normalizeWord);
+      var got = strictLetterAnswer(value);
+      if(got === null) return 0;
+      var accepted = [expected].concat(task.altAnswers || []).map(compactExpected);
       return accepted.indexOf(got) !== -1 ? task.maxScore : 0;
     }
+    var raw = strictDigitAnswer(value);
+    if(raw === null) return 0;
     if(task.kind === "ordered_sequence"){
-      var raw = digitsOnly(value);
       if(raw === expected) return task.maxScore;
       if(raw.length !== expected.length) return 0;
       var diff = 0;
       for(var i=0;i<expected.length;i++){ if(raw[i] !== expected[i]) diff++; }
       return diff === 1 || diff === 2 ? 1 : 0;
     }
-    return sortedDigits(value) === sortedDigits(expected) ? task.maxScore : 0;
+    return sortedDigits(raw) === sortedDigits(expected) ? task.maxScore : 0;
   }
   function correctDisplay(task){
     if(task.number === 1) return "сам; весь";
@@ -148,14 +159,14 @@
     if(task.kind === "essay"){
       return '<div class="edemo-answer"><label for="edemo-answer-input">Текст сочинения</label>' +
         '<textarea class="edemo-essay" id="edemo-answer-input" spellcheck="true">' + escapeHtml(value) + '</textarea>' +
-        '<p class="edemo-answer-help">Технический счётчик: <span class="edemo-word-count" id="edemo-live-word-count">' + wordCount(value) + '</span>. Минимальный объём — 150 слов. Окончательный подсчёт выполняется по правилам ФИПИ.</p>' +
+        '<p class="edemo-answer-help">Технический счётчик — только ориентир: <span class="edemo-word-count" id="edemo-live-word-count">' + wordCount(value) + '</span>. Он не применяется автоматически к оцениванию. Официальный объём определяется по правилам ФИПИ.</p>' +
         '<p class="edemo-save-status" id="edemo-save-status">' + (String(value || "").trim() ? "✓ Ответ сохранён автоматически" : "Ответ будет сохранён автоматически при вводе") + '</p></div>';
     }
     return '<div class="edemo-answer"><label for="edemo-answer-input">Ответ</label>' +
       '<input class="edemo-input" id="edemo-answer-input" type="text" inputmode="' +
       (task.kind.indexOf("sequence") !== -1 || task.kind === "unordered_digits" ? "numeric" : "text") +
       '" autocomplete="off" spellcheck="false" value="' + escapeAttr(value) + '">' +
-      '<p class="edemo-answer-help">В бланке ЕГЭ ответ записывается без пробелов, запятых и других дополнительных символов. В тренажёре пробелы в кратком ответе удаляются при проверке.</p>' +
+      '<p class="edemo-answer-help">Ответ проверяется в форме бланка ЕГЭ: без пробелов, запятых и других дополнительных символов. Любой лишний символ приводит к 0 баллов.</p>' +
       '<p class="edemo-save-status" id="edemo-save-status">' + (String(value || "").trim() ? "✓ Ответ сохранён автоматически" : "Ответ будет сохранён автоматически при вводе") + '</p></div>';
   }
   function renderTask(){
@@ -227,29 +238,56 @@
   ];
   function essayWords(){ return wordCount(state.answers[27] || ""); }
   function essayAssessmentComplete(){ return criteria.every(function(c){ return Object.prototype.hasOwnProperty.call(state.essayScores,c.id); }); }
+  function essayGeneralZero(){
+    var reasons=state.essayZeroReasons || {};
+    return !!(reasons.under150 || reasons.offText || reasons.copiedOnly);
+  }
   function enforceEssayRules(){
-    if(essayWords()<150){ state.essayScores={}; state.essayScore=0; return; }
+    if(essayGeneralZero()){ state.essayScore=0; return; }
     if(Object.prototype.hasOwnProperty.call(state.essayScores,"K1") && Number(state.essayScores.K1)===0){ state.essayScores.K2=0; state.essayScores.K3=0; }
     if(!essayAssessmentComplete()){ state.essayScore=null; return; }
     state.essayScore=criteria.reduce(function(sum,c){ return sum+Math.min(c.max,Math.max(0,Number(state.essayScores[c.id]))); },0);
   }
+  function buildZeroGrounds(){
+    var wrap=byId("edemo-zero-grounds");
+    if(!wrap) return;
+    var reasons=state.essayZeroReasons || {};
+    var items=[
+      ["under150","После официального подсчёта в работе 149 слов или меньше."],
+      ["offText","Работа написана без опоры на прочитанный текст — не по данному тексту."],
+      ["copiedOnly","Работа полностью переписывает или пересказывает исходный текст без каких бы то ни было комментариев."]
+    ];
+    wrap.innerHTML='<div class="edemo-zero-options">'+items.map(function(item){
+      return '<label class="edemo-zero-option"><input type="checkbox" data-zero-reason="'+item[0]+'"'+(reasons[item[0]]?' checked':'')+'><span>'+item[1]+'</span></label>';
+    }).join("")+'</div>';
+    wrap.querySelectorAll("[data-zero-reason]").forEach(function(input){
+      input.addEventListener("change",function(){
+        state.essayZeroReasons=state.essayZeroReasons || {};
+        state.essayZeroReasons[input.getAttribute("data-zero-reason")]=input.checked;
+        enforceEssayRules(); saveState(); renderResultScores(); buildCriteria();
+      });
+    });
+  }
   function buildCriteria(){
     var wrap=byId("edemo-criteria"), count=essayWords(); wrap.innerHTML="";
-    if(count<150){
-      var warning=document.createElement("div"); warning.className="ep-panel edemo-danger";
-      warning.innerHTML="<p><strong>Сочинение содержит менее 150 слов.</strong> Такая работа не засчитывается и оценивается по всем критериям нулём баллов.</p>";
+    if(essayGeneralZero()){
+      var danger=document.createElement("div"); danger.className="ep-panel edemo-danger";
+      danger.innerHTML="<p><strong>Отмечено общее основание ФИПИ для 0 баллов.</strong> Задание 27 считается невыполненным и по К1–К10 оценивается 0 баллов.</p>";
+      wrap.appendChild(danger);
+    }else if(count<150){
+      var warning=document.createElement("div"); warning.className="ep-panel edemo-warning";
+      warning.innerHTML="<p><strong>Технический счётчик показывает менее 150 слов.</strong> Это только сигнал для ручной проверки: автоматически работа не обнуляется. Выполните подсчёт по правилам ФИПИ и при результате 149 слов или меньше отметьте соответствующее общее основание.</p>";
       wrap.appendChild(warning);
     }else{
       var note=document.createElement("div"); note.className="ep-panel edemo-warning";
-      note.innerHTML="<p>Счётчик не может автоматически исключить полностью переписанную формулировку проблемы или сведения об авторе. Перед самооценкой сопоставьте объём с официальными правилами подсчёта.</p>";
+      note.innerHTML="<p>Технический счётчик не умеет определять, какая часть текста переписана или пересказана. При частичном переписывании или пересказе учитывайте только слова, принадлежащие автору сочинения.</p>";
       wrap.appendChild(note);
     }
     criteria.forEach(function(c){
       var row=document.createElement("div"); row.className="edemo-criterion";
       var has=Object.prototype.hasOwnProperty.call(state.essayScores,c.id), opts='<option value="">Не оценено</option>';
       for(var i=0;i<=c.max;i++) opts+='<option value="'+i+'"'+(has&&Number(state.essayScores[c.id])===i?' selected':'')+'>'+i+'</option>';
-      row.innerHTML='<div><label for="edemo-'+c.id+'"><strong>'+c.label+'</strong><br><span class="edemo-mini">Максимум: '+c.max+'</span></label><details class="edemo-mini"><summary>Условия выставления баллов</summary>'+c.html+'</details></div>'+
-        '<select id="edemo-'+c.id+'"'+(count<150?' disabled':'')+'>'+opts+'</select>';
+      row.innerHTML='<div><label for="edemo-'+c.id+'"><strong>'+c.label+'</strong><br><span class="edemo-mini">Максимум: '+c.max+'</span></label><details class="edemo-mini"><summary>Условия выставления баллов</summary>'+c.html+'</details></div>'+ '<select id="edemo-'+c.id+'"'+(essayGeneralZero()?' disabled':'')+'>'+opts+'</select>';
       wrap.appendChild(row);
       row.querySelector("select").addEventListener("change",function(e){
         if(e.target.value==="") delete state.essayScores[c.id]; else state.essayScores[c.id]=Number(e.target.value);
@@ -269,17 +307,20 @@
   function renderResultScores(){
     enforceEssayRules();
     byId("edemo-short-score").textContent=state.shortScore;
-    if(state.essayScore===null){
+    if(essayGeneralZero()){
+      byId("edemo-essay-score").textContent="0"; byId("edemo-total-score").textContent=state.shortScore;
+      byId("edemo-essay-status").textContent="0 баллов: отмечено общее основание ФИПИ";
+    }else if(state.essayScore===null){
       byId("edemo-essay-score").textContent="—"; byId("edemo-total-score").textContent="—"; byId("edemo-essay-status").textContent="Заполните К1–К10";
     }else{
       byId("edemo-essay-score").textContent=state.essayScore; byId("edemo-total-score").textContent=state.shortScore+state.essayScore;
-      byId("edemo-essay-status").textContent=essayWords()<150?"0 баллов: менее 150 слов":"Самооценка заполнена";
+      byId("edemo-essay-status").textContent="Ориентировочная самооценка";
     }
     byId("edemo-result-word-count").textContent=essayWords();
   }
   function renderResult(){
     setViewState("finished"); byId("edemo-result-date").textContent=state.completedAt?new Date(state.completedAt).toLocaleString("ru-RU"):"";
-    renderResultScores(); buildCriteria(); renderReview();
+    renderResultScores(); buildZeroGrounds(); buildCriteria(); renderReview();
     window.scrollTo({top:Math.max(0,root.getBoundingClientRect().top+window.scrollY-20),behavior:"smooth"});
   }
   function finishExam(auto){
@@ -290,6 +331,20 @@
   function init(){
     root=byId(ROOT_ID); if(!root) return;
     data=mergeData(); tasks=data.tasks; sources=data.sources; state=loadState();
+    window.__edemoTest={
+      getTasks:function(){return tasks;},
+      scoreTask:scoreTask,
+      getState:function(){return JSON.parse(JSON.stringify(state));},
+      evaluateEssay:function(textValue,scores,reasons){
+        state.answers[27]=String(textValue || "");
+        state.essayScores=Object.assign({},scores || {});
+        state.essayZeroReasons=Object.assign({},reasons || {});
+        enforceEssayRules();
+        return {score:state.essayScore,zero:essayGeneralZero(),words:essayWords(),scores:Object.assign({},state.essayScores)};
+      },
+      strictLetterAnswer:strictLetterAnswer,
+      strictDigitAnswer:strictDigitAnswer
+    };
     updateStartControls();
     byId("edemo-start").addEventListener("click",startExam);
     byId("edemo-resume").addEventListener("click",resumeExam);

@@ -1,0 +1,120 @@
+from __future__ import annotations
+
+import hashlib
+import json
+import re
+import shutil
+import zipfile
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+PREFIX = "ege-russkiy-demoversiya"
+ZIP_NAME = "ege-russkiy-demoversiya-v2-1-fixed.zip"
+
+
+def read(path: Path) -> str:
+    return path.read_text(encoding="utf-8")
+
+
+def write(path: Path, text: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8", newline="\n")
+
+
+def sha256(path: Path) -> str:
+    h = hashlib.sha256()
+    with path.open("rb") as fh:
+        for chunk in iter(lambda: fh.read(1024 * 1024), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def replace_once(text: str, old: str, new: str, label: str) -> str:
+    if old in text:
+        return text.replace(old, new, 1)
+    if new in text:
+        return text
+    raise RuntimeError(f"Expected text not found: {label}")
+
+
+def replace_regex(text: str, pattern: str, replacement: str, label: str) -> str:
+    updated, count = re.subn(pattern, lambda _m: replacement, text, count=1, flags=re.S)
+    if count != 1:
+        raise RuntimeError(f"Expected regex block not found: {label}; replacements={count}")
+    return updated
+
+
+def install_sources() -> dict[str, str]:
+    old = ROOT / "source-russkiy"
+    new = ROOT / "source"
+    new.mkdir(exist_ok=True)
+    names = [
+        "ege-2026-russkiy-demoversiya.pdf",
+        "ege-2026-russkiy-kodifikator.pdf",
+        "ege-2026-russkiy-specifikatsiya.pdf",
+    ]
+    for name in names:
+        src, dst = old / name, new / name
+        if src.exists():
+            shutil.copy2(src, dst)
+        if not dst.exists():
+            raise RuntimeError(f"Missing official source PDF: {name}")
+    if old.exists():
+        shutil.rmtree(old)
+    return {name: sha256(new / name) for name in names}
+
+
+def update_interface() -> None:
+    path = ROOT / f"{PREFIX}-T123-01.txt"
+    text = read(path)
+    styles = (
+        "    #ege-demo-2026 .edemo-zero-options{display:grid;gap:10px;margin-top:14px}\n"
+        "    #ege-demo-2026 .edemo-zero-option{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border:1px solid #dfe4eb;border-radius:12px;background:#fff}\n"
+        "    #ege-demo-2026 .edemo-zero-option input{width:auto;margin-top:4px;flex:0 0 auto}\n"
+        "    #ege-demo-2026 .edemo-zero-option span{line-height:1.5}\n"
+    )
+    anchor = "    #ege-demo-2026 .edemo-hidden{display:none!important}\n"
+    if styles not in text:
+        text = replace_once(text, anchor, styles + anchor, "zero-ground styles")
+
+    text = text.replace(
+        '<div class="edemo-score-card"><div class="edemo-score-value"><span id="edemo-total-score">—</span>/50</div><p>Итог после проверки сочинения</p><p class="edemo-mini">Самооценка не заменяет проверку эксперта</p></div>',
+        '<div class="edemo-score-card"><div class="edemo-score-value"><span id="edemo-total-score">—</span>/50</div><p>Ориентировочный итог по самооценке</p><p class="edemo-mini">Официальный балл за сочинение выставляет эксперт</p></div>',
+    )
+    old = '''                <h3 class="ep-section-title">Самооценка сочинения по К1–К10</h3>
+                <p>Эксамио не заменяет проверку эксперта. Для каждого критерия раскрыты официальные условия выставления баллов. Итог появляется после заполнения всех десяти критериев.</p>
+                <p><strong>Слов в сочинении:</strong> <span class="edemo-word-count" id="edemo-result-word-count">0</span></p>
+                <div class="edemo-criteria" id="edemo-criteria"></div>'''
+    new = '''                <h3 class="ep-section-title">Самооценка сочинения по К1–К10</h3>
+                <p>Эксамио не заменяет проверку эксперта. Сначала проверьте общие основания, при которых задание 27 оценивается 0 баллов, затем заполните К1–К10.</p>
+                <p><strong>Технический счётчик — ориентир:</strong> <span class="edemo-word-count" id="edemo-result-word-count">0</span>. Он не используется для автоматического выставления баллов.</p>
+                <section class="ep-panel ep-section">
+                  <h4 class="ep-section-title">Общие основания для 0 баллов</h4>
+                  <p>Отметьте основание только после проверки работы по правилам ФИПИ. При частичном переписывании или пересказе исходного текста в объём входят только слова, принадлежащие автору сочинения.</p>
+                  <div id="edemo-zero-grounds"></div>
+                </section>
+                <div class="edemo-criteria" id="edemo-criteria"></div>'''
+    text = replace_once(text, old, new, "essay assessment interface")
+    write(path, text)
+
+
+def update_logic() -> None:
+    path = ROOT / f"{PREFIX}-T123-05.txt"
+    text = read(path)
+    text = text.replace('var STORAGE_KEY = "eksamio_ege_russian_demo_2026_v2";', 'var STORAGE_KEY = "eksamio_ege_russian_demo_2026_v2_1";')
+    text = text.replace("      version:2,", "      version:2.1,")
+    text = replace_once(text, "      essayScores:{},\n      essayScore:null", "      essayScores:{},\n      essayScore:null,\n      essayZeroReasons:{}", "fresh zero reasons")
+
+    normalization = '''  function compactExpected(value){
+    return String(value || "").trim().toLowerCase().replace(/ё/g,"е").replace(/\\s+/g,"");
+  }
+  function strictLetterAnswer(value){
+    var raw=String(value || "").toLowerCase().replace(/ё/g,"е");
+    if(!raw || !/^[А-ЯЁа-яёA-Za-z]+$/.test(raw)) return null;
+    return raw;
+  }
+  function strictDigitAnswer(value){
+    var raw=String(value || "");
+    return /^\\d+$/.test(raw) ? raw : null;
+  }
+  function sortedDigits(value){ return String(value || "").split("").sort().join(""); }

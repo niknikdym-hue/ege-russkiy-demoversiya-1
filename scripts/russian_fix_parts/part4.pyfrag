@@ -1,0 +1,79 @@
+- три общих основания ФИПИ дают 0/22 — PASS;
+- К1=0 обнуляет К2 и К3 — PASS;
+- пять T123 встроены в preview — PASS;
+- три PDF находятся в source и manifest — PASS;
+- ZIP цел — PASS.
+
+Реальная установка на Tilda: НЕ ПРОВЕРЕНА.
+""")
+
+
+def rebuild_preview() -> None:
+    head = read(ROOT / f"{PREFIX}-HEAD.txt").strip()
+    blocks = "\n".join(read(ROOT / f"{PREFIX}-T123-{i:02d}.txt").rstrip() for i in range(1, 6))
+    preview = '<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Демоверсия ЕГЭ по русскому языку</title>\n' + head + '</head><body style="margin:0">' + blocks + '\n</body></html>\n'
+    write(ROOT / f"{PREFIX}-PREVIEW.html", preview)
+
+
+def release_files() -> list[Path]:
+    files = [p for p in sorted(ROOT.glob(f"{PREFIX}-*")) if p.is_file() and p.name not in {f"{PREFIX}-MANIFEST.txt", ZIP_NAME}]
+    files.extend(sorted((ROOT / "source").glob("*.pdf")))
+    return files
+
+
+def rebuild_manifest_and_zip() -> None:
+    manifest = ROOT / f"{PREFIX}-MANIFEST.txt"
+    write(manifest, "\n".join(f"{sha256(p)}  {p.relative_to(ROOT).as_posix()}" for p in release_files()) + "\n")
+    zip_path = ROOT / ZIP_NAME
+    if zip_path.exists():
+        zip_path.unlink()
+    with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as zf:
+        for path in sorted(release_files() + [manifest]):
+            zf.write(path, path.relative_to(ROOT).as_posix())
+
+
+def validate() -> None:
+    logic = read(ROOT / f"{PREFIX}-T123-05.txt")
+    interface = read(ROOT / f"{PREFIX}-T123-01.txt")
+    preview = read(ROOT / f"{PREFIX}-PREVIEW.html")
+    for phrase in ['STORAGE_KEY = "eksamio_ege_russian_demo_2026_v2_1"', "strictLetterAnswer", "strictDigitAnswer", "essayGeneralZero", "under150", "offText", "copiedOnly"]:
+        if phrase not in logic:
+            raise RuntimeError(f"Missing corrected logic phrase: {phrase}")
+    if "пробелы в кратком ответе удаляются" in logic or "if(essayWords()<150)" in logic:
+        raise RuntimeError("Old permissive or automatic-zero logic remains")
+    if "edemo-zero-grounds" not in interface or "Технический счётчик — ориентир" not in interface:
+        raise RuntimeError("Corrected essay interface missing")
+    if preview.count('id="edemo-data-') != 3 or "edemo-zero-grounds" not in preview:
+        raise RuntimeError("Preview incomplete")
+    if (ROOT / "source-russkiy").exists():
+        raise RuntimeError("Old source folder remains")
+    source_names = ["ege-2026-russkiy-demoversiya.pdf", "ege-2026-russkiy-kodifikator.pdf", "ege-2026-russkiy-specifikatsiya.pdf"]
+    manifest = read(ROOT / f"{PREFIX}-MANIFEST.txt")
+    for name in source_names:
+        if not (ROOT / "source" / name).exists() or f"source/{name}" not in manifest:
+            raise RuntimeError(f"Missing source or manifest entry: {name}")
+    with zipfile.ZipFile(ROOT / ZIP_NAME) as zf:
+        if zf.testzip():
+            raise RuntimeError("Corrupt ZIP")
+        names = set(zf.namelist())
+        for name in source_names:
+            if f"source/{name}" not in names:
+                raise RuntimeError(f"Source missing from ZIP: {name}")
+
+
+def main() -> None:
+    source_hashes = install_sources()
+    update_interface()
+    update_logic()
+    update_documents(source_hashes)
+    rebuild_preview()
+    rebuild_manifest_and_zip()
+    validate()
+    for obsolete in [ROOT / "scripts/extract_russian_pdf.py", ROOT / "scripts/russian_pdf_text.txt"]:
+        if obsolete.exists():
+            obsolete.unlink()
+    print("Russian language prelaunch correction: PASS")
+
+
+if __name__ == "__main__":
+    main()

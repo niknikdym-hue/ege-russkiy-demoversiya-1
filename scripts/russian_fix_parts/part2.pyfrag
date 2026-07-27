@@ -1,0 +1,120 @@
+  function wordCount'''
+    text = replace_regex(text, r"  function normalizeWord\(value\)\{.*?  function wordCount", normalization, "strict normalization")
+
+    old_score = '''  function scoreTask(task, value){
+    if(task.kind === "essay") return 0;
+    var expected = task.answer;
+    if(task.kind === "word" || task.kind === "word_compact"){
+      var got = normalizeWord(value);
+      var accepted = [expected].concat(task.altAnswers || []).map(normalizeWord);
+      return accepted.indexOf(got) !== -1 ? task.maxScore : 0;
+    }
+    if(task.kind === "ordered_sequence"){
+      var raw = digitsOnly(value);
+      if(raw === expected) return task.maxScore;
+      if(raw.length !== expected.length) return 0;
+      var diff = 0;
+      for(var i=0;i<expected.length;i++){ if(raw[i] !== expected[i]) diff++; }
+      return diff === 1 || diff === 2 ? 1 : 0;
+    }
+    return sortedDigits(value) === sortedDigits(expected) ? task.maxScore : 0;
+  }'''
+    new_score = '''  function scoreTask(task, value){
+    if(task.kind === "essay") return 0;
+    var expected = String(task.answer || "");
+    if(task.kind === "word" || task.kind === "word_compact"){
+      var got = strictLetterAnswer(value);
+      if(got === null) return 0;
+      var accepted = [expected].concat(task.altAnswers || []).map(compactExpected);
+      return accepted.indexOf(got) !== -1 ? task.maxScore : 0;
+    }
+    var raw = strictDigitAnswer(value);
+    if(raw === null) return 0;
+    if(task.kind === "ordered_sequence"){
+      if(raw === expected) return task.maxScore;
+      if(raw.length !== expected.length) return 0;
+      var diff = 0;
+      for(var i=0;i<expected.length;i++){ if(raw[i] !== expected[i]) diff++; }
+      return diff === 1 || diff === 2 ? 1 : 0;
+    }
+    return sortedDigits(raw) === sortedDigits(expected) ? task.maxScore : 0;
+  }'''
+    text = replace_once(text, old_score, new_score, "scoreTask")
+
+    text = replace_regex(
+        text,
+        r'<p class="edemo-answer-help">Технический счётчик:.*?</p>',
+        '<p class="edemo-answer-help">Технический счётчик — только ориентир: <span class="edemo-word-count" id="edemo-live-word-count">' + "' + wordCount(value) + '" + '</span>. Он не применяется автоматически к оцениванию. Официальный объём определяется по правилам ФИПИ.</p>',
+        "essay counter help",
+    )
+    text = replace_once(
+        text,
+        '<p class="edemo-answer-help">В бланке ЕГЭ ответ записывается без пробелов, запятых и других дополнительных символов. В тренажёре пробелы в кратком ответе удаляются при проверке.</p>',
+        '<p class="edemo-answer-help">Ответ проверяется в форме бланка ЕГЭ: без пробелов, запятых и других дополнительных символов. Любой лишний символ приводит к 0 баллов.</p>',
+        "strict help",
+    )
+
+    essay_block = r'''  function essayWords(){ return wordCount(state.answers[27] || ""); }
+  function essayAssessmentComplete(){ return criteria.every(function(c){ return Object.prototype.hasOwnProperty.call(state.essayScores,c.id); }); }
+  function essayGeneralZero(){
+    var reasons=state.essayZeroReasons || {};
+    return !!(reasons.under150 || reasons.offText || reasons.copiedOnly);
+  }
+  function enforceEssayRules(){
+    if(essayGeneralZero()){ state.essayScore=0; return; }
+    if(Object.prototype.hasOwnProperty.call(state.essayScores,"K1") && Number(state.essayScores.K1)===0){ state.essayScores.K2=0; state.essayScores.K3=0; }
+    if(!essayAssessmentComplete()){ state.essayScore=null; return; }
+    state.essayScore=criteria.reduce(function(sum,c){ return sum+Math.min(c.max,Math.max(0,Number(state.essayScores[c.id]))); },0);
+  }
+  function buildZeroGrounds(){
+    var wrap=byId("edemo-zero-grounds");
+    if(!wrap) return;
+    var reasons=state.essayZeroReasons || {};
+    var items=[
+      ["under150","После официального подсчёта в работе 149 слов или меньше."],
+      ["offText","Работа написана без опоры на прочитанный текст — не по данному тексту."],
+      ["copiedOnly","Работа полностью переписывает или пересказывает исходный текст без каких бы то ни было комментариев."]
+    ];
+    wrap.innerHTML='<div class="edemo-zero-options">'+items.map(function(item){
+      return '<label class="edemo-zero-option"><input type="checkbox" data-zero-reason="'+item[0]+'"'+(reasons[item[0]]?' checked':'')+'><span>'+item[1]+'</span></label>';
+    }).join("")+'</div>';
+    wrap.querySelectorAll("[data-zero-reason]").forEach(function(input){
+      input.addEventListener("change",function(){
+        state.essayZeroReasons=state.essayZeroReasons || {};
+        state.essayZeroReasons[input.getAttribute("data-zero-reason")]=input.checked;
+        enforceEssayRules(); saveState(); renderResultScores(); buildCriteria();
+      });
+    });
+  }
+  function buildCriteria(){
+    var wrap=byId("edemo-criteria"), count=essayWords(); wrap.innerHTML="";
+    if(essayGeneralZero()){
+      var danger=document.createElement("div"); danger.className="ep-panel edemo-danger";
+      danger.innerHTML="<p><strong>Отмечено общее основание ФИПИ для 0 баллов.</strong> Задание 27 считается невыполненным и по К1–К10 оценивается 0 баллов.</p>";
+      wrap.appendChild(danger);
+    }else if(count<150){
+      var warning=document.createElement("div"); warning.className="ep-panel edemo-warning";
+      warning.innerHTML="<p><strong>Технический счётчик показывает менее 150 слов.</strong> Это только сигнал для ручной проверки: автоматически работа не обнуляется. Выполните подсчёт по правилам ФИПИ и при результате 149 слов или меньше отметьте соответствующее общее основание.</p>";
+      wrap.appendChild(warning);
+    }else{
+      var note=document.createElement("div"); note.className="ep-panel edemo-warning";
+      note.innerHTML="<p>Технический счётчик не умеет определять, какая часть текста переписана или пересказана. При частичном переписывании или пересказе учитывайте только слова, принадлежащие автору сочинения.</p>";
+      wrap.appendChild(note);
+    }
+    criteria.forEach(function(c){
+      var row=document.createElement("div"); row.className="edemo-criterion";
+      var has=Object.prototype.hasOwnProperty.call(state.essayScores,c.id), opts='<option value="">Не оценено</option>';
+      for(var i=0;i<=c.max;i++) opts+='<option value="'+i+'"'+(has&&Number(state.essayScores[c.id])===i?' selected':'')+'>'+i+'</option>';
+      row.innerHTML='<div><label for="edemo-'+c.id+'"><strong>'+c.label+'</strong><br><span class="edemo-mini">Максимум: '+c.max+'</span></label><details class="edemo-mini"><summary>Условия выставления баллов</summary>'+c.html+'</details></div>'+ '<select id="edemo-'+c.id+'"'+(essayGeneralZero()?' disabled':'')+'>'+opts+'</select>';
+      wrap.appendChild(row);
+      row.querySelector("select").addEventListener("change",function(e){
+        if(e.target.value==="") delete state.essayScores[c.id]; else state.essayScores[c.id]=Number(e.target.value);
+        enforceEssayRules(); saveState(); renderResultScores(); buildCriteria();
+      });
+    });
+  }
+'''
+    text = replace_regex(text, r"  function essayWords\(\).*?(?=  function renderReview\(\))", essay_block, "essay zero logic")
+
+    old_scores = '''  function renderResultScores(){
+    enforceEssayRules();

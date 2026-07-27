@@ -1,0 +1,130 @@
+name: Russian language prelaunch fixes
+
+on:
+  pull_request:
+    paths:
+      - scripts/russian_fix_parts/**
+      - tests/russian_fix_browser_test.mjs
+      - .github/workflows/russian-prelaunch-fix.yml
+  push:
+    branches:
+      - fix/prelaunch-russian-v2-1
+    paths:
+      - scripts/russian_fix_parts/**
+      - tests/russian_fix_browser_test.mjs
+      - .github/workflows/russian-prelaunch-fix.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-test:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out fix branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
+          fetch-depth: 0
+
+      - name: Assemble correction script
+        run: |
+          cat scripts/russian_fix_parts/part1.pyfrag \
+              scripts/russian_fix_parts/part2.pyfrag \
+              scripts/russian_fix_parts/part3.pyfrag \
+              scripts/russian_fix_parts/part4.pyfrag \
+              > scripts/apply_russian_fix.py
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('scripts/apply_russian_fix.py')
+          compile(path.read_text(encoding='utf-8'), str(path), 'exec')
+          print('Correction script syntax: PASS')
+          PY
+
+      - name: Apply all Codex audit fixes
+        id: apply
+        continue-on-error: true
+        run: |
+          if grep -q 'eksamio_ege_russian_demo_2026_v2_1' ege-russkiy-demoversiya-T123-05.txt \
+             && test -d source \
+             && test ! -d source-russkiy \
+             && test -f ege-russkiy-demoversiya-v2-1-fixed.zip; then
+            echo 'Corrected package already present; proceeding to full validation.'
+            rm -f russian-apply-error.log
+          else
+            PYTHONDONTWRITEBYTECODE=1 python scripts/apply_russian_fix.py > russian-apply-error.log 2>&1
+          fi
+
+      - name: Save correction diagnostic on failure
+        if: steps.apply.outcome == 'failure'
+        run: |
+          cat russian-apply-error.log
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add russian-apply-error.log
+          git commit -m "Record Russian correction diagnostic"
+          git push origin HEAD:${{ github.head_ref || github.ref_name }}
+          exit 1
+
+      - name: Set up Node
+        if: steps.apply.outcome == 'success'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install browser dependency
+        if: steps.apply.outcome == 'success'
+        run: npm install --no-save jsdom@26
+
+      - name: Run browser smoke tests
+        if: steps.apply.outcome == 'success'
+        id: browser
+        continue-on-error: true
+        run: node tests/russian_fix_browser_test.mjs > russian-browser-error.log 2>&1
+
+      - name: Save browser diagnostic on failure
+        if: steps.apply.outcome == 'success' && steps.browser.outcome == 'failure'
+        run: |
+          cat russian-browser-error.log
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add russian-browser-error.log
+          git commit -m "Record Russian browser test diagnostic"
+          git push origin HEAD:${{ github.head_ref || github.ref_name }}
+          exit 1
+
+      - name: Validate corrected package
+        if: steps.apply.outcome == 'success' && steps.browser.outcome == 'success'
+        run: |
+          rm -rf node_modules package-lock.json package.json scripts/__pycache__ russian-apply-error.log russian-browser-error.log
+          git diff --check
+          python -m zipfile -t ege-russkiy-demoversiya-v2-1-fixed.zip
+          grep -q 'source/ege-2026-russkiy-demoversiya.pdf' ege-russkiy-demoversiya-MANIFEST.txt
+          grep -q 'source/ege-2026-russkiy-kodifikator.pdf' ege-russkiy-demoversiya-MANIFEST.txt
+          grep -q 'source/ege-2026-russkiy-specifikatsiya.pdf' ege-russkiy-demoversiya-MANIFEST.txt
+          test ! -d source-russkiy
+          test -f ege-russkiy-demoversiya-PREVIEW.html
+
+      - name: Commit corrected package
+        if: steps.apply.outcome == 'success' && steps.browser.outcome == 'success'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes were required."
+          else
+            git commit -m "Fix Russian language prelaunch audit findings"
+            git push origin HEAD:${{ github.head_ref || github.ref_name }}
+          fi
+
+      - name: Upload corrected ZIP
+        if: steps.apply.outcome == 'success' && steps.browser.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ege-russkiy-demoversiya-v2-1-fixed
+          path: ege-russkiy-demoversiya-v2-1-fixed.zip
+          if-no-files-found: error
+          retention-days: 30
