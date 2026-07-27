@@ -3,13 +3,15 @@ name: Russian language prelaunch fixes
 on:
   pull_request:
     paths:
-      - scripts/extract_russian_pdf.py
+      - scripts/russian_fix_parts/**
+      - tests/russian_fix_browser_test.mjs
       - .github/workflows/russian-prelaunch-fix.yml
   push:
     branches:
       - fix/prelaunch-russian-v2-1
     paths:
-      - scripts/extract_russian_pdf.py
+      - scripts/russian_fix_parts/**
+      - tests/russian_fix_browser_test.mjs
       - .github/workflows/russian-prelaunch-fix.yml
   workflow_dispatch:
 
@@ -17,7 +19,7 @@ permissions:
   contents: write
 
 jobs:
-  extract-criteria:
+  apply-and-test:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
@@ -25,22 +27,63 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ github.head_ref || github.ref_name }}
-      - name: Set up Python
-        uses: actions/setup-python@v5
+          fetch-depth: 0
+
+      - name: Assemble correction script
+        run: |
+          cat scripts/russian_fix_parts/part1.pyfrag \
+              scripts/russian_fix_parts/part2.pyfrag \
+              scripts/russian_fix_parts/part3.pyfrag \
+              scripts/russian_fix_parts/part4.pyfrag \
+              > scripts/apply_russian_fix.py
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('scripts/apply_russian_fix.py')
+          compile(path.read_text(encoding='utf-8'), str(path), 'exec')
+          print('Correction script syntax: PASS')
+          PY
+
+      - name: Apply all Codex audit fixes
+        run: PYTHONDONTWRITEBYTECODE=1 python scripts/apply_russian_fix.py
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
         with:
-          python-version: '3.12'
-      - name: Install PDF reader
-        run: pip install pypdf
-      - name: Extract official criteria
-        run: python scripts/extract_russian_pdf.py
-      - name: Commit extracted text
+          node-version: '22'
+
+      - name: Install browser dependency
+        run: npm install --no-save jsdom@26
+
+      - name: Run browser smoke tests
+        run: node tests/russian_fix_browser_test.mjs
+
+      - name: Validate corrected package
+        run: |
+          rm -rf node_modules package-lock.json package.json scripts/__pycache__
+          git diff --check
+          python -m zipfile -t ege-russkiy-demoversiya-v2-1-fixed.zip
+          grep -q 'source/ege-2026-russkiy-demoversiya.pdf' ege-russkiy-demoversiya-MANIFEST.txt
+          grep -q 'source/ege-2026-russkiy-kodifikator.pdf' ege-russkiy-demoversiya-MANIFEST.txt
+          grep -q 'source/ege-2026-russkiy-specifikatsiya.pdf' ege-russkiy-demoversiya-MANIFEST.txt
+          test ! -d source-russkiy
+          test -f ege-russkiy-demoversiya-PREVIEW.html
+
+      - name: Commit corrected package
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add scripts/russian_pdf_text.txt
+          git add -A
           if git diff --cached --quiet; then
-            echo "No extraction changes."
+            echo "No changes were required."
           else
-            git commit -m "Extract Russian language FIPI criteria"
+            git commit -m "Fix Russian language prelaunch audit findings"
             git push origin HEAD:${{ github.head_ref || github.ref_name }}
           fi
+
+      - name: Upload corrected ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: ege-russkiy-demoversiya-v2-1-fixed
+          path: ege-russkiy-demoversiya-v2-1-fixed.zip
+          if-no-files-found: error
+          retention-days: 30
