@@ -23,6 +23,7 @@ const tasks = api.getTasks();
 assert.equal(tasks.length, 27, '27 task positions');
 
 let checkedVariants = 0;
+let checkedAlternativeAnswers = 0;
 for (const base of tasks.filter((task) => task.number <= 26)) {
   const variants = base.variants?.length ? base.variants : [{}];
   for (const variant of variants) {
@@ -31,15 +32,25 @@ for (const base of tasks.filter((task) => task.number <= 26)) {
       ? String(task.answer).replace(/\s+/g, '')
       : String(task.answer);
     assert.equal(api.scoreTask(task, correct), task.maxScore, `official key ${task.number}`);
+    for (const alternative of task.altAnswers || []) {
+      const compactAlternative = String(alternative).replace(/\s+/g, '');
+      assert.equal(api.scoreTask(task, compactAlternative), task.maxScore, `official alternative ${task.number}: ${alternative}`);
+      assert.equal(api.scoreTask(task, `${compactAlternative} `), 0, `space rejected in alternative ${task.number}: ${alternative}`);
+      checkedAlternativeAnswers += 1;
+    }
     assert.equal(api.scoreTask(task, `${correct}!`), 0, `punctuation rejected ${task.number}`);
     assert.equal(api.scoreTask(task, `${correct} `), 0, `space rejected ${task.number}`);
     if (task.kind !== 'word' && task.kind !== 'word_compact') {
       assert.equal(api.scoreTask(task, `${correct}а`), 0, `letter rejected in digits ${task.number}`);
     }
+    if (task.kind === 'unordered_digits' && correct.length > 1) {
+      assert.equal(api.scoreTask(task, [...correct].reverse().join('')), task.maxScore, `permitted digit order ${task.number}`);
+    }
     checkedVariants += 1;
   }
 }
 assert.equal(checkedVariants, 35, 'all 35 official short-answer examples checked');
+assert.equal(checkedAlternativeAnswers, 4, 'all four official alternative answers checked');
 
 for (const number of [8, 22]) {
   const base = tasks.find((task) => task.number === number);
@@ -76,4 +87,4 @@ assert.ok(html.includes('Общие основания для 0 баллов'));
 assert.ok(html.includes('Технический счётчик — ориентир'));
 assert.ok(!html.includes('пробелы в кратком ответе удаляются'));
 
-console.log(JSON.stringify({ status: 'PASS', checkedVariants, essayGeneralZeroReasons: 3 }, null, 2));
+console.log(JSON.stringify({ status: 'PASS', checkedVariants, checkedAlternativeAnswers, essayGeneralZeroReasons: 3 }, null, 2));
