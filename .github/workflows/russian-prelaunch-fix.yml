@@ -46,7 +46,16 @@ jobs:
       - name: Apply all Codex audit fixes
         id: apply
         continue-on-error: true
-        run: PYTHONDONTWRITEBYTECODE=1 python scripts/apply_russian_fix.py > russian-apply-error.log 2>&1
+        run: |
+          if grep -q 'eksamio_ege_russian_demo_2026_v2_1' ege-russkiy-demoversiya-T123-05.txt \
+             && test -d source \
+             && test ! -d source-russkiy \
+             && test -f ege-russkiy-demoversiya-v2-1-fixed.zip; then
+            echo 'Corrected package already present; proceeding to full validation.'
+            rm -f russian-apply-error.log
+          else
+            PYTHONDONTWRITEBYTECODE=1 python scripts/apply_russian_fix.py > russian-apply-error.log 2>&1
+          fi
 
       - name: Save correction diagnostic on failure
         if: steps.apply.outcome == 'failure'
