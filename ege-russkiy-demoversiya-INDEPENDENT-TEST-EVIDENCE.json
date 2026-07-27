@@ -1,0 +1,36 @@
+{
+  "status": "PASS",
+  "package_version": "2.1",
+  "audit_date": "2026-07-27",
+  "sources": {
+    "ege-2026-russkiy-demoversiya.pdf": "5d77634c7e3aa80f5cd60a703ddaa4359a78f907f2623570ed7495051a7b9a39",
+    "ege-2026-russkiy-kodifikator.pdf": "c5a886b39b659df827f8766b71a99cb1c04140c4a506ccd32d952a021efc046f",
+    "ege-2026-russkiy-specifikatsiya.pdf": "3b71ec81f954bc32b574a0b3b997ee37bb3bc19ae8825f11217fd7149198b476"
+  },
+  "short_answers": {
+    "strict_form_required": true,
+    "extra_spaces_rejected": true,
+    "punctuation_rejected": true,
+    "letters_in_digit_answers_rejected": true,
+    "tasks_8_22_partial_scoring_preserved": true
+  },
+  "essay": {
+    "technical_counter_is_advisory_only": true,
+    "general_zero_reasons": [
+      "official_count_149_or_less",
+      "without_support_on_source_text",
+      "fully_copied_or_retold_without_comment"
+    ],
+    "partial_copy_counts_only_authors_words": true,
+    "k1_zero_forces_k2_k3_zero": true,
+    "max_score": 22
+  },
+  "checks": {
+    "task_count": 27,
+    "short_max": 28,
+    "total_max": 50,
+    "preview_rebuilt": true,
+    "manifest_has_three_source_hashes": true,
+    "zip_integrity_pass": true
+  }
+}
