@@ -1,6 +1,10 @@
 name: Russian language prelaunch fixes
 
 on:
+  pull_request:
+    paths:
+      - scripts/extract_russian_pdf.py
+      - .github/workflows/russian-prelaunch-fix.yml
   push:
     branches:
       - fix/prelaunch-russian-v2-1
@@ -20,7 +24,7 @@ jobs:
       - name: Check out fix branch
         uses: actions/checkout@v4
         with:
-          ref: fix/prelaunch-russian-v2-1
+          ref: ${{ github.head_ref || github.ref_name }}
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -34,5 +38,9 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add scripts/russian_pdf_text.txt
-          git commit -m "Extract Russian language FIPI criteria"
-          git push origin HEAD:fix/prelaunch-russian-v2-1
+          if git diff --cached --quiet; then
+            echo "No extraction changes."
+          else
+            git commit -m "Extract Russian language FIPI criteria"
+            git push origin HEAD:${{ github.head_ref || github.ref_name }}
+          fi
