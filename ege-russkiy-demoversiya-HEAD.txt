@@ -1,0 +1,34 @@
+<!-- Title, Description and Keywords are entered manually in Tilda from ege-russkiy-demoversiya-SEO.txt. -->
+<link rel="canonical" href="https://eksamio.ru/ege/russkiy/demoversiya/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Интерактивная демоверсия ЕГЭ по русскому языку 2026">
+<meta property="og:description" content="27 заданий, 210 минут, проверка заданий 1–26 и самооценка сочинения по критериям К1–К10.">
+<meta property="og:url" content="https://eksamio.ru/ege/russkiy/demoversiya/">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Интерактивная демоверсия ЕГЭ по русскому языку 2026">
+<meta name="twitter:description" content="Пройдите официальный демонстрационный вариант ЕГЭ в интерактивном формате.">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "LearningResource",
+      "name": "Интерактивная демоверсия ЕГЭ по русскому языку 2026",
+      "url": "https://eksamio.ru/ege/russkiy/demoversiya/",
+      "inLanguage": "ru-RU",
+      "educationalLevel": "11 класс, ЕГЭ",
+      "learningResourceType": "Интерактивная демоверсия",
+      "description": "Официальные задания демоверсии ЕГЭ по русскому языку 2026 в интерактивном формате с таймером, проверкой кратких ответов и самооценкой сочинения.",
+      "isBasedOn": "https://fipi.ru/ege/demoversii-specifikacii-kodifikatory",
+      "provider": {"@type":"Organization","name":"Эксамио","url":"https://eksamio.ru/"}
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {"@type":"ListItem","position":1,"name":"Эксамио","item":"https://eksamio.ru/"},
+        {"@type":"ListItem","position":2,"name":"Интерактивная демоверсия ЕГЭ по русскому языку","item":"https://eksamio.ru/ege/russkiy/demoversiya/"}
+      ]
+    }
+  ]
+}
+</script>

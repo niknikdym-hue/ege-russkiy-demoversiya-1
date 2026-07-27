@@ -1,0 +1,314 @@
+<div class="ep-root ep-russian-index" id="ege-demo-2026">
+  <style>
+    #ege-demo-2026 .edemo-breadcrumbs{font-size:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    #ege-demo-2026 .edemo-breadcrumbs a{color:inherit}
+    #ege-demo-2026 .edemo-exam-shell{display:none}
+    #ege-demo-2026[data-state="running"] .edemo-start-panel{display:none}
+    #ege-demo-2026[data-state="running"] .edemo-exam-shell{display:block}
+    #ege-demo-2026[data-state="finished"] .edemo-start-panel,#ege-demo-2026[data-state="finished"] .edemo-exam-shell{display:none}
+    #ege-demo-2026 .edemo-toolbar{position:sticky;top:10px;z-index:12;display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center}
+    #ege-demo-2026 .edemo-timer{font-variant-numeric:tabular-nums;font-weight:800;font-size:20px;white-space:nowrap}
+    #ege-demo-2026 .edemo-progress{height:10px;border-radius:999px;background:#eef1f5;overflow:hidden}
+    #ege-demo-2026 .edemo-progress>span{display:block;height:100%;width:0;background:currentColor;transition:width .2s ease}
+    #ege-demo-2026 .edemo-finish-button{
+      position:relative!important;
+      isolation:isolate!important;
+      appearance:none!important;
+      -webkit-appearance:none!important;
+      min-height:42px!important;
+      padding:11px 17px!important;
+      border:1px solid #7f2635!important;
+      border-radius:11px!important;
+      background:#8f2f40!important;
+      background-image:none!important;
+      color:#fff!important;
+      -webkit-text-fill-color:#fff!important;
+      font-weight:800!important;
+      line-height:1.2!important;
+      text-shadow:none!important;
+      box-shadow:0 4px 12px rgba(91,24,38,.20)!important;
+      filter:none!important;
+      opacity:1!important;
+      overflow:visible!important;
+      cursor:pointer!important;
+      transition:background-color .18s ease,border-color .18s ease,box-shadow .18s ease,transform .12s ease!important;
+    }
+    #ege-demo-2026 .edemo-finish-button::before,
+    #ege-demo-2026 .edemo-finish-button::after{
+      content:none!important;
+      display:none!important;
+      background:none!important;
+      box-shadow:none!important;
+    }
+    #ege-demo-2026 .edemo-finish-button:hover{
+      background:#772536!important;
+      border-color:#67202f!important;
+      color:#fff!important;
+      -webkit-text-fill-color:#fff!important;
+      box-shadow:0 6px 16px rgba(91,24,38,.28)!important;
+      transform:translateY(-1px)!important;
+    }
+    #ege-demo-2026 .edemo-finish-button:active{
+      background:#64202e!important;
+      border-color:#64202e!important;
+      box-shadow:0 2px 7px rgba(91,24,38,.22)!important;
+      transform:translateY(0)!important;
+    }
+    #ege-demo-2026 .edemo-finish-button:focus-visible{
+      outline:3px solid rgba(143,47,64,.28)!important;
+      outline-offset:3px!important;
+    }
+    #ege-demo-2026 .edemo-nav-grid{display:grid;grid-template-columns:repeat(9,minmax(36px,1fr));gap:7px}
+    #ege-demo-2026 .edemo-nav-btn{
+      min-height:38px;
+      border:1px solid #d9dee7;
+      border-radius:10px;
+      background:#fff;
+      color:#27303f;
+      font-weight:800;
+      cursor:pointer;
+      box-shadow:none;
+      transition:background-color .16s ease,border-color .16s ease,color .16s ease,box-shadow .16s ease;
+    }
+    #ege-demo-2026 .edemo-nav-btn:hover{
+      border-color:#9da8b7;
+      background:#f7f9fc;
+    }
+    #ege-demo-2026 .edemo-nav-btn[data-filled="true"]{
+      border-color:#4d9469;
+      background:#e7f6ed;
+      color:#245b3b;
+      box-shadow:inset 0 0 0 1px rgba(77,148,105,.10);
+    }
+    #ege-demo-2026 .edemo-nav-btn[data-flagged="true"]{
+      border-color:#cf7a18;
+      background:#fff0d6;
+      color:#704009;
+      box-shadow:inset 0 0 0 1px rgba(207,122,24,.12);
+    }
+    #ege-demo-2026 .edemo-nav-btn[aria-current="true"]{
+      outline:3px solid rgba(49,96,181,.24);
+      outline-offset:2px;
+      border-color:#315fb5;
+    }
+    #ege-demo-2026 .edemo-task-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+    #ege-demo-2026 .edemo-task-number{font-size:14px;font-weight:800;letter-spacing:.04em;text-transform:uppercase}
+    #ege-demo-2026 .edemo-task-prompt{font-size:17px;line-height:1.62}
+    #ege-demo-2026 .edemo-task-prompt ol{padding-left:24px}
+    #ege-demo-2026 .edemo-task-prompt li{margin:0 0 10px}
+    #ege-demo-2026 .edemo-source{margin:16px 0;padding:18px;border:1px solid #dfe4eb;border-radius:14px;max-height:52vh;overflow:auto;background:#fff}
+    #ege-demo-2026 .edemo-source p{margin:0 0 12px;line-height:1.58}
+    #ege-demo-2026 .edemo-source-author,#ege-demo-2026 .edemo-source-note{font-size:14px}
+    #ege-demo-2026 .edemo-answer{margin-top:20px}
+    #ege-demo-2026 .edemo-answer label{display:block;font-weight:750;margin-bottom:8px}
+    #ege-demo-2026 .edemo-input,#ege-demo-2026 .edemo-essay{width:100%;box-sizing:border-box;border:1px solid #cdd4df;border-radius:12px;background:#fff;padding:14px 15px;font:inherit}
+    #ege-demo-2026 .edemo-input{max-width:460px;font-size:18px}
+    #ege-demo-2026 .edemo-essay{min-height:440px;resize:vertical;line-height:1.55}
+    #ege-demo-2026 .edemo-answer-help{font-size:13px;margin-top:7px;opacity:.72}
+    #ege-demo-2026 .edemo-save-status{font-size:14px;margin:8px 0 0;font-weight:750;opacity:1}
+    #ege-demo-2026 .edemo-action-note{font-size:13px;margin:12px 0 0;opacity:.78}
+    #ege-demo-2026 .edemo-task-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:space-between;margin-top:20px}
+    #ege-demo-2026 .edemo-task-actions__group{display:flex;gap:10px;flex-wrap:wrap}
+    #ege-demo-2026 .edemo-task-actions .ep-button--secondary{
+      position:relative!important;
+      isolation:isolate!important;
+      appearance:none!important;
+      -webkit-appearance:none!important;
+      background:#fff!important;
+      background-image:none!important;
+      color:#17324d!important;
+      -webkit-text-fill-color:#17324d!important;
+      border:1px solid #c9d3df!important;
+      box-shadow:none!important;
+      text-shadow:none!important;
+      filter:none!important;
+      opacity:1!important;
+      overflow:visible!important;
+    }
+    #ege-demo-2026 .edemo-task-actions .ep-button--secondary::before,
+    #ege-demo-2026 .edemo-task-actions .ep-button--secondary::after{
+      content:none!important;
+      display:none!important;
+      background:none!important;
+      box-shadow:none!important;
+    }
+    #ege-demo-2026 .edemo-task-actions .ep-button--secondary:hover{
+      background:#f4f7fb!important;
+      color:#17324d!important;
+      -webkit-text-fill-color:#17324d!important;
+    }
+    #ege-demo-2026 .edemo-task-actions .ep-button--secondary:disabled{
+      background:#f4f5f7!important;
+      color:#7b8794!important;
+      -webkit-text-fill-color:#7b8794!important;
+      border-color:#d9dee5!important;
+      opacity:1!important;
+      cursor:not-allowed!important;
+    }
+    #ege-demo-2026 .edemo-word-count{font-weight:700}
+    #ege-demo-2026 .edemo-result{display:none}
+    #ege-demo-2026[data-state="finished"] .edemo-result{display:block}
+    #ege-demo-2026 .edemo-score-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+    #ege-demo-2026 .edemo-score-card{border:1px solid #dfe4eb;border-radius:14px;padding:16px;background:#fff}
+    #ege-demo-2026 .edemo-score-value{font-size:30px;font-weight:850;line-height:1}
+    #ege-demo-2026 .edemo-review-list{display:grid;gap:10px}
+    #ege-demo-2026 .edemo-review-item{border:1px solid #dfe4eb;border-radius:12px;padding:14px;background:#fff}
+    #ege-demo-2026 .edemo-review-item[data-correct="true"]{border-left:5px solid #2f8a58}
+    #ege-demo-2026 .edemo-review-item[data-correct="false"]{border-left:5px solid #b84e4e}
+    #ege-demo-2026 .edemo-criteria{display:grid;gap:10px;width:100%;min-width:0}
+    #ege-demo-2026 .edemo-criterion{display:grid;grid-template-columns:1fr minmax(120px,180px);gap:12px;align-items:center;border:1px solid #dfe4eb;border-radius:12px;padding:12px;width:100%;min-width:0}
+    #ege-demo-2026 .edemo-result{width:100%;max-width:100%;min-width:0;overflow:hidden}
+    #ege-demo-2026 .edemo-result>.ep-panel{width:100%;max-width:100%;min-width:0;margin-left:0!important;margin-right:0!important}
+    #ege-demo-2026 .edemo-result .edemo-warning,#ege-demo-2026 .edemo-result .edemo-danger{width:100%;max-width:100%;min-width:0;margin-left:0!important;margin-right:0!important}
+    #ege-demo-2026 .edemo-criterion select{width:100%;padding:10px;border:1px solid #cdd4df;border-radius:10px;background:#fff}
+    #ege-demo-2026,#ege-demo-2026 *{box-sizing:border-box}
+    #ege-demo-2026 .ep-page,#ege-demo-2026 .ep-layout,#ege-demo-2026 .ep-layout__main,#ege-demo-2026 .ep-stack{min-width:0;max-width:100%}
+    #ege-demo-2026 .edemo-start-panel>.ep-section-title{margin-bottom:18px}
+    #ege-demo-2026 .edemo-start-panel>p{margin:0 0 16px;line-height:1.62}
+    #ege-demo-2026 .edemo-start-panel>p:last-of-type{margin-bottom:0}
+    #ege-demo-2026 .edemo-notice{margin-top:24px;padding:16px 18px;border:1px solid #ead7a2;border-left:5px solid #b9891c;border-radius:12px;background:#fff8e8}
+    #ege-demo-2026 .edemo-notice p{margin:0;line-height:1.55}
+    #ege-demo-2026 .edemo-start-actions{margin-top:24px}
+    #ege-demo-2026 .edemo-source-credit{overflow-wrap:anywhere}
+    #ege-demo-2026 .edemo-source-credit p{margin-top:0;margin-bottom:14px;line-height:1.58}
+    #ege-demo-2026 .edemo-source-credit p:last-child{margin-bottom:0}
+    #ege-demo-2026 .edemo-warning{border-left:5px solid #b9891c}
+    #ege-demo-2026 .edemo-danger{border-left:5px solid #b84e4e}
+    #ege-demo-2026 .edemo-match{display:grid;gap:8px;padding:12px;border-radius:12px;background:#f6f8fb;margin:12px 0}
+    #ege-demo-2026 .edemo-plain-list{list-style:none;padding:0}
+    #ege-demo-2026 .edemo-quotes{padding:12px;border-radius:12px;background:#f6f8fb}
+    #ege-demo-2026 .edemo-mini{font-size:13px;opacity:.75}
+    #ege-demo-2026 .edemo-hidden{display:none!important}
+    @media(max-width:900px){
+      #ege-demo-2026 .edemo-toolbar{grid-template-columns:1fr auto}
+      #ege-demo-2026 .edemo-toolbar .edemo-progress{grid-column:1/-1}
+      #ege-demo-2026 .edemo-toolbar .edemo-finish-button{min-width:190px}
+      #ege-demo-2026 .edemo-nav-grid{grid-template-columns:repeat(6,minmax(36px,1fr))}
+      #ege-demo-2026 .edemo-score-grid{grid-template-columns:1fr}
+    }
+    @media(max-width:560px){
+      #ege-demo-2026 .edemo-toolbar .edemo-finish-button{grid-column:1/-1;width:100%;min-width:0;justify-content:center;margin-top:2px}
+      #ege-demo-2026{overflow-x:hidden}
+      #ege-demo-2026 .ep-page{width:100%;padding-left:16px;padding-right:16px}
+      #ege-demo-2026 .ep-layout,#ege-demo-2026 .ep-layout__main,#ege-demo-2026 .ep-panel{width:100%;max-width:100%}
+      #ege-demo-2026 .edemo-nav-grid{grid-template-columns:repeat(5,minmax(36px,1fr))}
+      #ege-demo-2026 .edemo-criterion{grid-template-columns:1fr}
+      #ege-demo-2026 .edemo-task-actions{display:block}
+      #ege-demo-2026 .edemo-task-actions__group{margin-top:10px}
+      #ege-demo-2026 .edemo-start-panel{padding:20px 18px}
+      #ege-demo-2026 .edemo-notice{margin-top:22px;padding:15px 16px}
+      #ege-demo-2026 .edemo-start-actions{margin-top:22px}
+      #ege-demo-2026 .edemo-start-actions .ep-button{width:100%;justify-content:center}
+      #ege-demo-2026 .edemo-result{padding:20px 18px!important}
+      #ege-demo-2026 .edemo-result>.ep-panel{margin-top:20px!important;padding:18px 16px!important}
+      #ege-demo-2026 .edemo-result .edemo-criteria{margin:0!important;padding:0!important}
+      #ege-demo-2026 .edemo-result .edemo-warning,#ege-demo-2026 .edemo-result .edemo-danger{padding:15px 16px!important}
+      #ege-demo-2026 .edemo-result .edemo-criterion{margin:0!important;padding:14px 15px!important}
+      #ege-demo-2026 .edemo-result .ep-actions{margin-top:22px}
+      #ege-demo-2026 .edemo-source-credit{padding:20px 18px}
+    }
+  </style>
+  <div class="ep-page">
+    <div class="ep-stack">
+      <div class="edemo-breadcrumbs">
+  <a href="https://eksamio.ru/">Главная</a>
+  <span aria-hidden="true">→</span>
+
+  <a href="https://eksamio.ru/ege/">ЕГЭ</a>
+  <span aria-hidden="true">→</span>
+
+  <a href="https://eksamio.ru/ege/demoversii/">Демоверсии</a>
+  <span aria-hidden="true">→</span>
+
+  <span>Демоверсия по русскому языку</span>
+</div>
+      <section class="ep-hero ep-hero--compact">
+        <div class="ep-hero__inner">
+          <div class="ep-meta">
+            <span class="ep-pill ep-pill--blue">ЕГЭ 2026</span>
+            <span class="ep-pill">27 заданий</span>
+            <span class="ep-pill">210 минут</span>
+            <span class="ep-pill">50 первичных баллов</span>
+          </div>
+          <h1 class="ep-title">Интерактивная демоверсия ЕГЭ по русскому языку</h1>
+          <p class="ep-lead">Официальные задания демонстрационного варианта в экзаменационном режиме: без подсказок до завершения, с таймером, сохранением ответов и подсчётом первичных баллов за задания 1–26.</p>
+        </div>
+      </section>
+
+      <div class="ep-layout ep-layout--ads">
+        <aside class="ep-layout__side ep-no-print">
+          <div class="ep-ad-stack">
+            <div class="ad-slot ep-ad-slot ep-ad-slot--side" data-ad-place="ege-demo-desktop-left-top" aria-label="Рекламный блок"></div>
+            <div class="ad-slot ep-ad-slot ep-ad-slot--side-compact" data-ad-place="ege-demo-desktop-left-middle" aria-label="Рекламный блок"></div>
+          </div>
+        </aside>
+
+        <main class="ep-layout__main">
+          <div class="ep-stack">
+            <section class="ep-panel ep-section edemo-start-panel">
+              <h2 class="ep-section-title">Перед началом</h2>
+              <p>Экзаменационная работа состоит из двух частей. Часть 1 содержит 26 заданий с кратким ответом, часть 2 — сочинение по прочитанному тексту.</p>
+              <p>На выполнение работы отводится <strong>3 часа 30 минут</strong>. Ответы сохраняются в браузере. После завершения задания 1–26 проверяются автоматически. Сочинение оценивается отдельно по официальным критериям К1–К10.</p>
+              <p>На позициях, где ФИПИ приводит несколько примеров через «ИЛИ», при начале попытки выбирается <strong>один официальный пример</strong>. Он закрепляется за попыткой и не меняется после перезагрузки страницы — так же, как в реальном варианте на каждой позиции предлагается только одно задание.</p>
+              <div class="edemo-notice" role="note"><p><strong>Важно:</strong> во время попытки правильные ответы и объяснения не показываются. Таймер продолжает идти после закрытия страницы.</p></div>
+              <div class="ep-actions edemo-start-actions">
+                <button class="ep-button" type="button" id="edemo-start">Начать экзамен</button>
+                <button class="ep-button ep-button--secondary edemo-hidden" type="button" id="edemo-resume">Продолжить попытку</button>
+                <button class="ep-button ep-button--secondary edemo-hidden" type="button" id="edemo-reset-start">Начать заново</button>
+              </div>
+            </section>
+
+            <div class="edemo-exam-shell">
+              <section class="ep-panel ep-section edemo-toolbar ep-no-print">
+                <div><div class="edemo-timer" id="edemo-timer">03:30:00</div><div class="edemo-mini">Оставшееся время</div></div>
+                <div class="edemo-progress" aria-label="Прогресс выполнения"><span id="edemo-progress-bar"></span></div>
+                <button class="ep-button ep-button--small edemo-finish-button" type="button" id="edemo-finish-top" title="Завершить попытку и перейти к результатам">Завершить экзамен</button>
+              </section>
+
+              <section class="ep-panel ep-section ep-no-print">
+                <h2 class="ep-section-title">Навигация по заданиям</h2>
+                <div class="edemo-nav-grid" id="edemo-nav"></div>
+                <p class="edemo-mini"><strong>Зелёный</strong> — ответ сохранён. <strong>Оранжевый</strong> — к заданию нужно вернуться позже. Синяя рамка показывает открытое сейчас задание.</p>
+              </section>
+
+              <section class="ep-panel ep-section" id="edemo-task-stage" aria-live="polite"></section>
+            </div>
+
+            <section class="ep-panel ep-section edemo-result" id="edemo-result">
+              <div class="ep-meta"><span class="ep-pill ep-pill--green">Попытка завершена</span><span class="ep-pill" id="edemo-result-date"></span></div>
+              <h2 class="ep-section-title">Результат</h2>
+              <div class="edemo-score-grid">
+                <div class="edemo-score-card"><div class="edemo-score-value"><span id="edemo-short-score">0</span>/28</div><p>Задания 1–26</p></div>
+                <div class="edemo-score-card"><div class="edemo-score-value"><span id="edemo-essay-score">—</span>/22</div><p>Сочинение по самооценке</p><p class="edemo-mini" id="edemo-essay-status">Не оценено</p></div>
+                <div class="edemo-score-card"><div class="edemo-score-value"><span id="edemo-total-score">—</span>/50</div><p>Итог после проверки сочинения</p><p class="edemo-mini">Самооценка не заменяет проверку эксперта</p></div>
+              </div>
+
+              <section class="ep-panel ep-section">
+                <h3 class="ep-section-title">Самооценка сочинения по К1–К10</h3>
+                <p>Эксамио не заменяет проверку эксперта. Для каждого критерия раскрыты официальные условия выставления баллов. Итог появляется после заполнения всех десяти критериев.</p>
+                <p><strong>Слов в сочинении:</strong> <span class="edemo-word-count" id="edemo-result-word-count">0</span></p>
+                <div class="edemo-criteria" id="edemo-criteria"></div>
+              </section>
+
+              <section class="ep-panel ep-section"><h3 class="ep-section-title">Разбор заданий 1–26</h3><div class="edemo-review-list" id="edemo-review"></div></section>
+              <div class="ep-actions"><button class="ep-button" type="button" id="edemo-restart">Пройти заново</button></div>
+            </section>
+
+            <section class="ep-panel ep-section edemo-source-credit">
+              <p><strong>Источник:</strong> официальный демонстрационный вариант КИМ ЕГЭ по русскому языку 2026 года, опубликованный ФГБНУ «ФИПИ».</p>
+              <p>Задания и критерии приведены по официальному демонстрационному варианту. Интерактивная оболочка и пояснения подготовлены Эксамио. Эксамио не является официальным ресурсом ФИПИ или Рособрнадзора.</p>
+              <p><a href="https://fipi.ru/ege/demoversii-specifikacii-kodifikatory" target="_blank" rel="noopener noreferrer">Открыть официальный источник ФИПИ ↗</a></p>
+            </section>
+          </div>
+        </main>
+
+        <aside class="ep-layout__side ep-no-print">
+          <div class="ep-ad-stack">
+            <div class="ad-slot ep-ad-slot ep-ad-slot--side" data-ad-place="ege-demo-desktop-right-top" aria-label="Рекламный блок"></div>
+            <div class="ad-slot ep-ad-slot ep-ad-slot--side-compact" data-ad-place="ege-demo-desktop-right-middle" aria-label="Рекламный блок"></div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </div>
+</div>
