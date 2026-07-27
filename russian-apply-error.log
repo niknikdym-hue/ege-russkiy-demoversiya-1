@@ -1,0 +1,11 @@
+Traceback (most recent call last):
+  File "/home/runner/work/ege-russkiy-demoversiya-1/ege-russkiy-demoversiya-1/scripts/apply_russian_fix.py", line 439, in <module>
+    main()
+  File "/home/runner/work/ege-russkiy-demoversiya-1/ege-russkiy-demoversiya-1/scripts/apply_russian_fix.py", line 427, in main
+    update_logic()
+  File "/home/runner/work/ege-russkiy-demoversiya-1/ege-russkiy-demoversiya-1/scripts/apply_russian_fix.py", line 122, in update_logic
+    text = replace_regex(text, r"  function normalizeWord\(value\)\{.*?  function wordCount", normalization, "strict normalization")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/ege-russkiy-demoversiya-1/ege-russkiy-demoversiya-1/scripts/apply_russian_fix.py", line 43, in replace_regex
+    raise RuntimeError(f"Expected regex block not found: {label}; replacements={count}")
+RuntimeError: Expected regex block not found: strict normalization; replacements=0
