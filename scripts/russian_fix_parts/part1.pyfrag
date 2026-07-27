@@ -109,12 +109,12 @@ def update_logic() -> None:
     return String(value || "").trim().toLowerCase().replace(/ё/g,"е").replace(/\\s+/g,"");
   }
   function strictLetterAnswer(value){
-    var raw=String(value || "").trim().toLowerCase().replace(/ё/g,"е");
+    var raw=String(value || "").toLowerCase().replace(/ё/g,"е");
     if(!raw || !/^[А-ЯЁа-яёA-Za-z]+$/.test(raw)) return null;
     return raw;
   }
   function strictDigitAnswer(value){
-    var raw=String(value || "").trim();
+    var raw=String(value || "");
     return /^\\d+$/.test(raw) ? raw : null;
   }
   function sortedDigits(value){ return String(value || "").split("").sort().join(""); }
