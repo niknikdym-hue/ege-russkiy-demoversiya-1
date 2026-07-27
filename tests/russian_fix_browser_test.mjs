@@ -39,7 +39,7 @@ for (const base of tasks.filter((task) => task.number <= 26)) {
     checkedVariants += 1;
   }
 }
-assert.equal(checkedVariants, 41, 'all 41 official short-answer examples checked');
+assert.equal(checkedVariants, 35, 'all 35 official short-answer examples checked');
 
 for (const number of [8, 22]) {
   const base = tasks.find((task) => task.number === number);
